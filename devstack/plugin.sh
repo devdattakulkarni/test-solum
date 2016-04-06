@@ -147,14 +147,33 @@ function configure_solum() {
     #cp -R $NOVADOCKER_PROJ_DIR/contrib/devstack/lib/* ${DEVSTACK_DIR}/lib/
     #cp $NOVADOCKER_PROJ_DIR/contrib/devstack/extras.d/* ${DEVSTACK_DIR}/extras.d/
 
-    #if [ ! -d $NOVA_CONF_DIR/rootwrap.d ] ; then
-    #    mkdir -p $NOVA_CONF_DIR/rootwrap.d
-    #fi
+    # Install docker
+    #echo deb http://get.docker.com/ubuntu docker main | sudo tee /etc/apt/sources.list.d/docker.list
+    #sudo apt-key adv --keyserver pgp5.ai.mit.edu --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
+    #sudo apt-get install -y apt-transport-https
+    #sudo apt-get update
+    #sudo apt-get install -y --force-yes lxc-docker-1.7.0
+    # sudo wget -qO- https://get.docker.com/ | sed 's/lxc-docker/lxc-docker-1.7.0/' | sh
+    #sudo curl -sSL https://get.docker.com/ | sh
+    sudo wget -O docker.deb https://apt.dockerproject.org/repo/pool/main/d/docker-engine/docker-engine_1.7.1-0~trusty_amd64.deb
+    sudo dpkg -i docker.deb
+
+    # Install docker driver
+    cd /opt/stack/nova-docker
+    sudo python setup.py install
+    sudo gpasswd -a ${USER} docker
+    sudo usermod -aG docker ${USER}
+    sudo chmod o=rwx /var/run/docker.sock
+
+    if [ ! -d $NOVA_CONF_DIR/rootwrap.d ] ; then
+        mkdir -p $NOVA_CONF_DIR/rootwrap.d
+    fi
 
     #cp $NOVADOCKER_PROJ_DIR/$NOVA_CONF_DIR/rootwrap.d/docker.filters $NOVA_CONF_DIR/rootwrap.d/docker.filters
+    sudo cp /opt/stack/nova-docker/etc/nova/rootwrap.d/docker.filters /etc/nova/rootwrap.d/.
 
     # configure Virtdriver in /etc/nova/nova.conf
-    # iniset $NOVA_CONF_DIR/$NOVA_CONF_FILE DEFAULT compute_driver novadocker.virt.docker.driver.DockerDriver
+    iniset $NOVA_CONF_DIR/$NOVA_CONF_FILE DEFAULT compute_driver novadocker.virt.docker.driver.DockerDriver
 
 }
 
